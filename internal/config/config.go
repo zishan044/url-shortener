@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -10,17 +9,16 @@ import (
 type Config struct {
 	DatabaseURL string
 	RedisURL string
+	JWTSecret string
 }
 
 func LoadConfig() *Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	_ = godotenv.Load()
 
 	return &Config{
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://zishan044:password@localhost:5432/url_shortener"),
-		RedisURL: getEnv("REDIS_URL", "redis://localhost:6379/0"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://zishan044:password@postgres:5432/url_shortener?sslmode=disable"),
+		RedisURL: getEnv("REDIS_URL", "redis://redis:6379/0"),
+		JWTSecret: getEnv("JWT_SECRET", "supersecret"),
 	}
 }
 

@@ -4,9 +4,13 @@ services:
     build: .
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy # Wait for the health check to pass
+      redis:
+        condition: service_started
   postgres:
     image: postgres:18.3-alpine3.23
     ports:
@@ -15,6 +19,11 @@ services:
       POSTGRES_USER: zishan044
       POSTGRES_PASSWORD: password
       POSTGRES_DB: url_shortener
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zishan044 -d url_shortener"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   redis:
     image: redis:8.4-alpine3.22
     ports:

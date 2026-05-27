@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
+	"github.com/zishan044/url-shortener/internal/auth"
 	"github.com/zishan044/url-shortener/internal/cache"
 	"github.com/zishan044/url-shortener/internal/config"
 	"github.com/zishan044/url-shortener/internal/database"
@@ -18,7 +19,14 @@ func main() {
 	cache.Connect(cfg.RedisURL)
 	defer cache.Client.Close()
 
+	authRepo := auth.NewRepository(database.Pool)
+	authService := auth.NewService(authRepo, cfg.JWTSecret)
+	authHandler := auth.NewHandler(authService)
+
 	r := gin.Default()
+	v1 := r.Group("/api/v1")
+
+	auth.RegisterRoutes(v1, authHandler)
 
 	r.GET("/health", func(c *gin.Context) {
 
