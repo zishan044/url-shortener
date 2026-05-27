@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+  postgres:
+    image: postgres:18.3-alpine3.23
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: zishan044
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: url_shortener
+  redis:
+    image: redis:8.4-alpine3.22
+    ports:
+      - "6379:6379"

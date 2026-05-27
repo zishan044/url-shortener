@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Local configs
+.env
+.env.*
+docker-compose.yml
+docker-compose.override.yml
+
+# Go files not needed in build context (Docker builds from scratch in builder stage)
+bin/
+dist/
+build/
+tmp/
+temp/
+
+# Go test/cache artifacts
+*.test
+*.out
+*.cover
+coverage.out
+
+# Go modules cache (not needed in build context)
+vendor/
+
+# IDE / editors
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker files (optional exclusion if you don't need them inside image context)
+Dockerfile
+.dockerignore
+
+# CI/CD
+.github/
+
+# Profiling
+*.pprof
+cpu.prof
+mem.prof
+block.prof
+mutex.prof
+
+# Misc
+*.swp
+*.swo

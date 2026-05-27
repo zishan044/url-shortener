@@ -1,0 +1,68 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build output (if you ever use custom output dirs)
+bin/
+dist/
+build/
+
+# Go coverage files
+*.cover
+coverage.out
+
+# Go workspace file (if used later)
+go.work
+go.work.sum
+
+# Dependency directory (only if you ever use vendor mode)
+vendor/
+
+# Environment files (IMPORTANT since you copy .env in Docker)
+.env
+.env.*
+!.env.example
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+.docker/
+
+# Test cache
+*.testcache
+
+# GoLand / JetBrains
+*.iml
+
+# Temporary files
+tmp/
+temp/
+
+# Air (live reload tool, if you use it later)
+.air.toml
+tmp/
+
+# Profiling output (pprof)
+cpu.prof
+mem.prof
+block.prof
+mutex.prof
+
+# Modules download cache (rare but sometimes used in CI)
+/.cache/
