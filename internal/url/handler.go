@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/zishan044/url-shortener/internal/cache"
 	"github.com/zishan044/url-shortener/internal/models"
 )
 
@@ -60,9 +61,31 @@ func (h *Handler) CreateUrl(c *gin.Context) {
 
 func (h *Handler) GetUrlByShortCode(c *gin.Context) {
 	shortCode := c.Param("shortCode")
+	cacheKey := "url:" + shortCode
+
+	cachedUrl, err := cache.Get[models.Url](c.Request.Context(), cacheKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cache error"})
+		return
+	}
+
+	if cachedUrl != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"url": cachedUrl,
+		})
+		return
+	}
+
 	url, err := h.service.GetUrlByShortCode(c.Request.Context(), shortCode)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
+		return
+	}
+
+	if err := cache.Set(c.Request.Context(), cacheKey, *url, 1*time.Hour); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"url": url,
+		})
 		return
 	}
 
