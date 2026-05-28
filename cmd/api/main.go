@@ -7,6 +7,7 @@ import (
 	"github.com/zishan044/url-shortener/internal/cache"
 	"github.com/zishan044/url-shortener/internal/config"
 	"github.com/zishan044/url-shortener/internal/database"
+	"github.com/zishan044/url-shortener/internal/url"
 )
 
 func main() {
@@ -23,10 +24,15 @@ func main() {
 	authService := auth.NewService(authRepo, cfg.JWTSecret)
 	authHandler := auth.NewHandler(authService)
 
+	urlRepo := url.NewRepository(database.Pool)
+	urlService := url.NewService(urlRepo)
+	urlHandler := url.NewHandler(urlService)
+
 	r := gin.Default()
 	v1 := r.Group("/api/v1")
 
 	auth.RegisterRoutes(v1, authHandler)
+	url.RegisterRoutes(v1, urlHandler, cfg.JWTSecret)
 
 	r.GET("/health", func(c *gin.Context) {
 
