@@ -11,4 +11,6 @@ func RegisterRoutes(r *gin.RouterGroup, handler *Handler, jwtSecret string) {
 		urlGroup.POST("/", middleware.AuthMiddleware(jwtSecret), handler.CreateUrl)
 		urlGroup.GET("/:shortCode", handler.GetUrlByShortCode)
 	}
+
+	r.GET("/r/:shortCode", handler.Redirect)
 }

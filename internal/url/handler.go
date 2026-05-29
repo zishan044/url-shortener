@@ -8,14 +8,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/zishan044/url-shortener/internal/cache"
 	"github.com/zishan044/url-shortener/internal/models"
+	"github.com/zishan044/url-shortener/internal/queue"
 )
 
 type Handler struct {
-	service Service
+	service   Service
+	publisher *queue.Publisher
 }
 
-func NewHandler(service Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service Service, publisher *queue.Publisher) *Handler {
+	return &Handler{service: service, publisher: publisher}
 }
 
 type CreateUrlRequest struct {
@@ -69,28 +71,74 @@ func (h *Handler) GetUrlByShortCode(c *gin.Context) {
 		return
 	}
 
+	var url *models.Url
 	if cachedUrl != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"url": cachedUrl,
-		})
-		return
+		url = cachedUrl
+	} else {
+		url, err = h.service.GetUrlByShortCode(c.Request.Context(), shortCode)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
+			return
+		}
+
+		if err := cache.Set(c.Request.Context(), cacheKey, *url, 1*time.Hour); err != nil {
+			// Log error but don't fail the request
+		}
 	}
 
-	url, err := h.service.GetUrlByShortCode(c.Request.Context(), shortCode)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
-		return
-	}
-
-	if err := cache.Set(c.Request.Context(), cacheKey, *url, 1*time.Hour); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"url": url,
-		})
-		return
-	}
+	h.trackClickAsync(c, url)
 
 	c.JSON(http.StatusOK, gin.H{
 		"url": url,
 	})
 }
+
+func (h *Handler) Redirect(c *gin.Context) {
+	shortCode := c.Param("shortCode")
+	cacheKey := "url:" + shortCode
+
+	cachedUrl, err := cache.Get[models.Url](c.Request.Context(), cacheKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cache error"})
+		return
+	}
+
+	var url *models.Url
+	if cachedUrl != nil {
+		url = cachedUrl
+	} else {
+		url, err = h.service.GetUrlByShortCode(c.Request.Context(), shortCode)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
+			return
+		}
+
+		if err := cache.Set(c.Request.Context(), cacheKey, *url, 1*time.Hour); err != nil {
+
+		}
+	}
+
+	
+	h.trackClickAsync(c, url)
+
+	c.Redirect(http.StatusMovedPermanently, url.OriginalURL)
+}
+
+func (h *Handler) trackClickAsync(c *gin.Context, url *models.Url) {
+	go func() {
+		click := &models.Click{
+			ID:        uuid.New(),
+			URLID:     url.ID,
+			Timestamp: time.Now(),
+			IP:        c.ClientIP(),
+			UserAgent: c.Request.UserAgent(),
+			Referrer:  c.Request.Referer(),
+		}
+
+		if err := h.publisher.PublishClick(c.Request.Context(), click); err != nil {
+			// Log error but don't fail the request
+		}
+	}()
+}
+
 
