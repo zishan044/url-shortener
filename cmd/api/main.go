@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -35,6 +36,9 @@ func main() {
 	defer publisher.Close()
 
 	analyticsRepo := analytics.NewRepository(database.Pool)
+	analyticsService := analytics.NewService(analyticsRepo)
+	analyticsHandler := analytics.NewHandler(analyticsService)
+	aggregationJob := analytics.NewAggregationJob(analyticsRepo, 5*time.Minute)
 
 	worker, err := analytics.NewWorker(cfg.RabbitMQURL, analyticsRepo)
 	if err != nil {
@@ -47,6 +51,7 @@ func main() {
 			log.Printf("Worker error: %v", err)
 		}
 	}()
+	go aggregationJob.Start(workerCtx)
 
 	authRepo := auth.NewRepository(database.Pool)
 	authService := auth.NewService(authRepo, cfg.JWTSecret)
@@ -60,6 +65,7 @@ func main() {
 	v1 := r.Group("/api/v1")
 
 	auth.RegisterRoutes(v1, authHandler)
+	analytics.RegisterRoutes(v1, analyticsHandler)
 	url.RegisterRoutes(v1, urlHandler, cfg.JWTSecret)
 
 	r.GET("/health", func(c *gin.Context) {
@@ -81,7 +87,7 @@ func main() {
 
 		c.JSON(200, gin.H{
 			"postgres": pgStatus,
-			"redis": rdbStatus,
+			"redis":    rdbStatus,
 		})
 	})
 
