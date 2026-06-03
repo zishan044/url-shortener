@@ -9,6 +9,7 @@ import (
 	"github.com/zishan044/url-shortener/internal/cache"
 	"github.com/zishan044/url-shortener/internal/models"
 	"github.com/zishan044/url-shortener/internal/queue"
+	"github.com/zishan044/url-shortener/internal/validators"
 )
 
 type Handler struct {
@@ -38,9 +39,15 @@ func (h *Handler) CreateUrl(c *gin.Context) {
 		return
 	}
 
+	sanitizedURL, err := validators.SanitizeURL(req.OriginalURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	url := &models.Url{
 		UserID:      userID.(uuid.UUID),
-		OriginalURL: req.OriginalURL,
+		OriginalURL: sanitizedURL,
 		ExpiresAt:   req.ExpiresAt,
 	}
 
@@ -49,7 +56,7 @@ func (h *Handler) CreateUrl(c *gin.Context) {
 		return
 	}
 
-	err := h.service.CreateUrl(c.Request.Context(), url)
+	err = h.service.CreateUrl(c.Request.Context(), url)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -82,7 +89,6 @@ func (h *Handler) GetUrlByShortCode(c *gin.Context) {
 		}
 
 		if err := cache.Set(c.Request.Context(), cacheKey, *url, 1*time.Hour); err != nil {
-			// Log error but don't fail the request
 		}
 	}
 

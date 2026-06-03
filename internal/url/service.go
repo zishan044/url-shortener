@@ -21,7 +21,6 @@ func NewService(repo Repository) Service {
 }
 
 func (s *service) CreateUrl(ctx context.Context, url *models.Url) error {
-	// Generate a unique short code with retry logic (max 5 attempts)
 	var shortCode string
 	var err error
 	maxRetries := 5
