@@ -79,7 +79,6 @@ func getClientIP(c *gin.Context) string {
 		}
 	}
 
-	// Try X-Real-IP header
 	if xri := c.GetHeader("X-Real-IP"); xri != "" {
 		return xri
 	}

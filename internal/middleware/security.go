@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,7 +14,12 @@ func SecureHeadersMiddleware() gin.HandlerFunc {
 
 		c.Header("X-XSS-Protection", "1; mode=block")
 
-		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';")
+		// Swagger UI ships an inline bootstrap script; strict script-src blocks it and leaves a blank page.
+		csp := "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';"
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger") {
+			csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';"
+		}
+		c.Header("Content-Security-Policy", csp)
 
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 

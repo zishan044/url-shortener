@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/zishan044/url-shortener/internal/analytics"
 	"github.com/zishan044/url-shortener/internal/auth"
@@ -20,8 +22,24 @@ import (
 	"github.com/zishan044/url-shortener/internal/middleware"
 	"github.com/zishan044/url-shortener/internal/queue"
 	"github.com/zishan044/url-shortener/internal/url"
+	_ "github.com/zishan044/url-shortener/docs"
 )
 
+// @title URL Shortener API
+// @version 1.0
+// @description A high-performance URL shortening service with analytics, authentication, and caching.
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @host localhost:8080
+// @basePath /api/v1
+// @schemes http https
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	cfg := config.LoadConfig()
 
@@ -120,6 +138,9 @@ func main() {
 			"time":     time.Now().Unix(),
 		})
 	})
+
+	// Swagger documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API routes with timeout
 	v1 := r.Group("/api/v1")

@@ -22,10 +22,32 @@ func NewHandler(service Service, publisher *queue.Publisher) *Handler {
 }
 
 type CreateUrlRequest struct {
-	OriginalURL string    `json:"original_url" binding:"required,url"`
-	ExpiresAt   time.Time `json:"expires_at"`
+	OriginalURL string    `json:"original_url" binding:"required,url" example:"https://github.com/zishan044"`
+	ExpiresAt   time.Time `json:"expires_at" example:"2025-12-31T23:59:59Z"`
 }
 
+type CreateUrlResponse struct {
+	Message string       `json:"message"`
+	URL     models.Url `json:"url"`
+}
+
+type GetUrlResponse struct {
+	URL models.Url `json:"url"`
+}
+
+// CreateUrl godoc
+// @Summary Create a short URL
+// @Description Create a new shortened URL for authenticated users
+// @Tags urls
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body CreateUrlRequest true "Create URL request"
+// @Success 201 {object} CreateUrlResponse "URL created successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Failure 401 {object} map[string]interface{} "Unauthorized"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /urls/ [post]
 func (h *Handler) CreateUrl(c *gin.Context) {
 	var req CreateUrlRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -68,6 +90,16 @@ func (h *Handler) CreateUrl(c *gin.Context) {
 	})
 }
 
+// GetUrlByShortCode godoc
+// @Summary Get URL by short code
+// @Description Retrieve the original URL and associated metadata for a short code
+// @Tags urls
+// @Produce json
+// @Param shortCode path string true "Short code"
+// @Success 200 {object} GetUrlResponse "URL retrieved successfully"
+// @Failure 404 {object} map[string]interface{} "URL not found"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /urls/{shortCode} [get]
 func (h *Handler) GetUrlByShortCode(c *gin.Context) {
 	shortCode := c.Param("shortCode")
 	cacheKey := "url:" + shortCode
@@ -99,6 +131,15 @@ func (h *Handler) GetUrlByShortCode(c *gin.Context) {
 	})
 }
 
+// Redirect godoc
+// @Summary Redirect to original URL
+// @Description Redirect to the original URL and record analytics
+// @Tags urls
+// @Param shortCode path string true "Short code"
+// @Success 301 "Redirect to original URL"
+// @Failure 404 {object} map[string]interface{} "URL not found"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /r/{shortCode} [get]
 func (h *Handler) Redirect(c *gin.Context) {
 	shortCode := c.Param("shortCode")
 	cacheKey := "url:" + shortCode
@@ -131,6 +172,10 @@ func (h *Handler) Redirect(c *gin.Context) {
 }
 
 func (h *Handler) trackClickAsync(c *gin.Context, url *models.Url) {
+	if h.publisher == nil {
+		return
+	}
+
 	go func() {
 		click := &models.Click{
 			ID:        uuid.New(),

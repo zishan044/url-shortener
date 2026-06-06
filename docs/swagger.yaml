@@ -1,0 +1,261 @@
+basePath: /api/v1
+definitions:
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        maxLength: 40
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LoginResponse:
+    properties:
+      token:
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+    type: object
+  auth.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        maxLength: 40
+        minLength: 8
+        type: string
+      username:
+        maxLength: 40
+        minLength: 4
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  models.Url:
+    properties:
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      original_url:
+        type: string
+      short_code:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  url.CreateUrlRequest:
+    properties:
+      expires_at:
+        example: "2025-12-31T23:59:59Z"
+        type: string
+      original_url:
+        example: https://github.com/zishan044
+        type: string
+    required:
+    - original_url
+    type: object
+  url.CreateUrlResponse:
+    properties:
+      message:
+        type: string
+      url:
+        $ref: '#/definitions/models.Url'
+    type: object
+  url.GetUrlResponse:
+    properties:
+      url:
+        $ref: '#/definitions/models.Url'
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: API Support
+    url: http://www.swagger.io/support
+  description: A high-performance URL shortening service with analytics, authentication,
+    and caching.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: URL Shortener API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with email and password to get JWT token
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Invalid credentials
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with email and password
+      parameters:
+      - description: Register request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: User registered successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /r/{shortCode}:
+    get:
+      description: Redirect to the original URL and record analytics
+      parameters:
+      - description: Short code
+        in: path
+        name: shortCode
+        required: true
+        type: string
+      responses:
+        "301":
+          description: Redirect to original URL
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Redirect to original URL
+      tags:
+      - urls
+  /urls/:
+    post:
+      consumes:
+      - application/json
+      description: Create a new shortened URL for authenticated users
+      parameters:
+      - description: Create URL request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/url.CreateUrlRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: URL created successfully
+          schema:
+            $ref: '#/definitions/url.CreateUrlResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a short URL
+      tags:
+      - urls
+  /urls/{shortCode}:
+    get:
+      description: Retrieve the original URL and associated metadata for a short code
+      parameters:
+      - description: Short code
+        in: path
+        name: shortCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL retrieved successfully
+          schema:
+            $ref: '#/definitions/url.GetUrlResponse'
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get URL by short code
+      tags:
+      - urls
+schemes:
+- http
+- https
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
